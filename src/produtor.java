@@ -1,17 +1,31 @@
-
 public class produtor implements Runnable {
+    private final int tempoProducao;
+
+    public produtor(int tempoProducao) {
+        this.tempoProducao = tempoProducao;
+    }
+
     @Override
     public void run() {
         try {
             while (true) {
                 int item = (int) (Math.random() * 100);
-                main.buffer.put(item);
-                System.out.println("Produzido: " + item);
-                Thread.sleep((int) (Math.random() * 1000)); // Simula o tempo de produção
+
+                synchronized (main.lock) {
+                    while (main.buffer.remainingCapacity() == 0) {
+                        System.out.println("Buffer cheio, produtor esperando...");
+                        main.lock.wait();
+                    }
+                    main.buffer.put(item);
+                    System.out.println("Produzido: " + item);
+                    main.lock.notifyAll();
+                }
+
+                Thread.sleep(tempoProducao); // Tempo de produção fornecido pelo usuário
             }
         } catch (InterruptedException e) {
+            System.out.println("Produtor Interrompido");
             Thread.currentThread().interrupt();
         }
     }
 }
-
